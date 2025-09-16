@@ -44,12 +44,11 @@
       if (tapTimes.length > 5) tapTimes.shift();
 
       if (tapTimes.length > 1) {
-        let intervals = [];
-        for (let i = 1; i < tapTimes.length; i++) {
-          intervals.push(tapTimes[i] - tapTimes[i - 1]);
-        }
-        let avgInterval = intervals.reduce((a, b) => a + b, 0) / intervals.length;
-        let bpm = Math.round(60000 / avgInterval);
+        const intervals = tapTimes
+          .slice(1)
+          .map((t, i) => t - tapTimes[i]);
+        const avg = intervals.reduce((a, b) => a + b, 0) / intervals.length;
+        const bpm = Math.round(60000 / avg);
         document.getElementById("bpmDisplay").textContent = bpm + " BPM";
       }
     }
@@ -63,47 +62,45 @@
       const display = document.getElementById("bpmDisplay").textContent;
       const bpm = parseInt(display) || 0;
       if (bpm <= 0) {
-        document.getElementById("status").textContent = "⚠️ Tap at least twice before submitting.";
+        document.getElementById("status").textContent =
+          "⚠️ Tap at least twice before submitting.";
         return;
       }
 
       if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(pos => {
-          sendData(bpm, pos.coords.latitude + "," + pos.coords.longitude);
-        }, () => {
-          sendData(bpm, "Location unavailable");
-        });
+        navigator.geolocation.getCurrentPosition(
+          pos => sendData(bpm, pos.coords.latitude + "," + pos.coords.longitude),
+          () => sendData(bpm, "Location unavailable")
+        );
       } else {
         sendData(bpm, "Geolocation not supported");
       }
     }
 
-    async function sendData(bpm, location) {
-      try {
-        const response = await fetch(
-          "https://script.google.com/macros/s/AKfycbxdvqnpXGXmO1C7BoYmYI-tSNJNRdRZv-1d6WSUfg3qY95FXoJykR5POXz5CJWpJDg9/exec",
-          {
-            method: "POST",
-            mode: "cors",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              bpm: bpm,
-              time: new Date().toISOString(),
-              location: location
-            })
-          }
-        );
-        const result = await response.json();
-        if (result.status === "Success") {
-          document.getElementById("status").textContent = "✅ BPM submitted: " + bpm;
-          resetBPM();
-        } else {
-          throw new Error(result.message || "Unknown error");
-        }
-      } catch (err) {
-        console.error("Submit error:", err);
-        document.getElementById("status").textContent = "⚠️ Error submitting!";
-      }
+    function sendData(bpm, location) {
+      const url = "https://script.google.com/macros/s/AKfycbwn0pDT1zrCnBSa3hBG5Q5foNoSMVFli344e9s9_K2jX7kvJFHB96EKalRZQ_OmIY3E/exec";
+      const payload = JSON.stringify({
+        bpm: bpm,
+        time: new Date().toISOString(),
+        location: location
+      });
+
+      // Fire‐and‐forget to bypass CORS preflight
+      fetch(url, {
+        method: "POST",
+        mode: "no-cors",
+        body: payload
+      })
+      .then(() => {
+        document.getElementById("status").textContent =
+          "✅ BPM submitted: " + bpm;
+        resetBPM();
+      })
+      .catch(err => {
+        console.error(err);
+        document.getElementById("status").textContent =
+          "⚠️ Error submitting!";
+      });
     }
   </script>
 </body>
