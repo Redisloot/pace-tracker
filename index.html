@@ -48,7 +48,7 @@
     }
 
     function upload(name, bpm, time, lat, lon) {
-      fetch("PASTE_YOUR_GOOGLE_SCRIPT_URL_HERE", {
+      fetch("https://script.google.com/macros/s/AKfycbwtsjnlESTef7hzYHr5Hh3ftRSOGs5Ib0KDgDtj7HPBDA7xJgJaMFSYyWtXUSwgp4PZ/exec", {
         method: "POST",
         body: JSON.stringify({name, bpm, time, lat, lon}),
         headers: {"Content-Type": "application/json"}
