@@ -1,78 +1,72 @@
-<!DOCTYPE html>
-<html>
-<head>
-  <title>IUB BPM Tracker</title>
-  <style>
-    body { text-align:center; font-family:sans-serif; margin-top:50px; }
-    button { font-size:2em; padding:20px; margin:20px; }
-  </style>
-</head>
-<body>
-  <h1>IUB BPM Tracker</h1>
-  <input type="text" id="userName" placeholder="Your Name">
-  <br>
-  <button id="tapButton">Tap to Beat</button>
-  <button id="submitButton">Submit BPM</button>
-  <p>Current BPM: <span id="bpm">0</span></p>
-  <p id="status"></p>
+<script>
+  let tapTimes = [];
+  let resetTimer;
 
-  <script>
-    let taps = [];
-    let currentBPM = 0;
-    const tapButton = document.getElementById("tapButton");
-    const submitButton = document.getElementById("submitButton");
-    const bpmDisplay = document.getElementById("bpm");
-    const statusDisplay = document.getElementById("status");
+  function tapBeat() {
+    const now = Date.now();
 
-    // Handle tap button
-    tapButton.addEventListener("click", () => {
-      const now = Date.now();
-      taps.push(now);
+    // Reset inactivity timer
+    clearTimeout(resetTimer);
+    resetTimer = setTimeout(resetBPM, 4000);
 
-      if (taps.length > 2) {
-        let intervals = [];
-        for (let i = 1; i < taps.length; i++) {
-          intervals.push(taps[i] - taps[i - 1]);
-        }
-        let avg = intervals.reduce((a, b) => a + b) / intervals.length;
-        currentBPM = Math.round(60000 / avg);
-        bpmDisplay.textContent = currentBPM;
-      }
-    });
+    tapTimes.push(now);
 
-    // Handle submit button
-    submitButton.addEventListener("click", () => {
-      if (!currentBPM || currentBPM <= 0) {
-        statusDisplay.textContent = "❌ Please tap a rhythm first!";
-        return;
-      }
-      const name = document.getElementById("userName").value;
-      const timestamp = new Date().toISOString();
-
-      if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(pos => {
-          upload(name, currentBPM, timestamp, pos.coords.latitude, pos.coords.longitude);
-        }, () => {
-          upload(name, currentBPM, timestamp, "N/A", "N/A");
-        });
-      } else {
-        upload(name, currentBPM, timestamp, "N/A", "N/A");
-      }
-    });
-
-    function upload(name, bpm, time, lat, lon) {
-      fetch("https://script.google.com/macros/s/AKfycbwtsjnlESTef7hzYHr5Hh3ftRSOGs5Ib0KDgDtj7HPBDA7xJgJaMFSYyWtXUSwgp4PZ/exec", {
-        method: "POST",
-        body: JSON.stringify({name, bpm, time, lat, lon}),
-        headers: {"Content-Type": "application/json"}
-      }).then(() => {
-        statusDisplay.textContent = "✅ Submitted!";
-        taps = []; // reset taps
-        currentBPM = 0;
-      }).catch(() => {
-        statusDisplay.textContent = "⚠️ Error submitting!";
-      });
+    // Only keep the last few taps to smooth out BPM
+    if (tapTimes.length > 5) {
+      tapTimes.shift();
     }
-  </script>
-</body>
-</html>
+
+    if (tapTimes.length > 1) {
+      let intervals = [];
+      for (let i = 1; i < tapTimes.length; i++) {
+        intervals.push(tapTimes[i] - tapTimes[i - 1]);
+      }
+      let avgInterval = intervals.reduce((a, b) => a + b, 0) / intervals.length;
+      let bpm = Math.round(60000 / avgInterval);
+
+      document.getElementById("bpmDisplay").textContent = bpm + " BPM";
+    }
+  }
+
+  function resetBPM() {
+    // Don't clear the display, just reset tap history
+    tapTimes = [];
+  }
+
+  async function submitBPM() {
+    if (tapTimes.length < 2 && document.getElementById("bpmDisplay").textContent === "Tap to Start") {
+      alert("Tap at least twice to calculate BPM before submitting.");
+      return;
+    }
+
+    let bpmText = document.getElementById("bpmDisplay").textContent;
+    let bpm = parseInt(bpmText);
+
+    let location = "";
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(pos => {
+        location = pos.coords.latitude + "," + pos.coords.longitude;
+        sendData(bpm, location);
+      }, () => {
+        sendData(bpm, "Location unavailable");
+      });
+    } else {
+      sendData(bpm, "Geolocation not supported");
+    }
+  }
+
+  async function sendData(bpm, location) {
+    await fetch("YOUR_GOOGLE_SCRIPT_URL_HERE", {
+      method: "POST",
+      body: JSON.stringify({
+        bpm: bpm,
+        time: new Date().toISOString(),
+        location: location
+      }),
+      headers: { "Content-Type": "application/json" }
+    });
+
+    alert("BPM submitted: " + bpm);
+    resetBPM();
+  }
+</script>
