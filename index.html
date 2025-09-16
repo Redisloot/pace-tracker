@@ -55,12 +55,12 @@
 
     function resetBPM() {
       tapTimes = [];
-      document.getElementById("bpmDisplay").textContent = "Tap to Start";
+      // Leave display alone so last BPM stays visible
     }
 
     function submitBPM() {
-      const display = document.getElementById("bpmDisplay").textContent;
-      const bpm = parseInt(display) || 0;
+      const text = document.getElementById("bpmDisplay").textContent;
+      const bpm = parseInt(text) || 0;
       if (bpm <= 0) {
         document.getElementById("status").textContent =
           "⚠️ Tap at least twice before submitting.";
@@ -69,23 +69,18 @@
 
       if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(
-          pos => sendData(bpm, pos.coords.latitude + "," + pos.coords.longitude),
-          () => sendData(bpm, "Location unavailable")
+          pos => sendData(bpm, pos.coords.latitude, pos.coords.longitude),
+          () => sendData(bpm, null, null)
         );
       } else {
-        sendData(bpm, "Geolocation not supported");
+        sendData(bpm, null, null);
       }
     }
 
-    function sendData(bpm, location) {
-      const url = "https://script.google.com/macros/s/AKfycbwn0pDT1zrCnBSa3hBG5Q5foNoSMVFli344e9s9_K2jX7kvJFHB96EKalRZQ_OmIY3E/exec";
-      const payload = JSON.stringify({
-        bpm: bpm,
-        time: new Date().toISOString(),
-        location: location
-      });
+    function sendData(bpm, latitude, longitude) {
+      const url = "https://script.google.com/macros/s/AKfycbxCQhq6NanG4gkw8wlhtnc903IibrEP32V1-3G-rUvXPLYo40d067m0EQyqwFfKtvAU/exec";
+      const payload = JSON.stringify({ bpm, latitude, longitude });
 
-      // Fire‐and‐forget to bypass CORS preflight
       fetch(url, {
         method: "POST",
         mode: "no-cors",
@@ -94,7 +89,7 @@
       .then(() => {
         document.getElementById("status").textContent =
           "✅ BPM submitted: " + bpm;
-        resetBPM();
+        // caret stays on last BPM, tap again to recalc
       })
       .catch(err => {
         console.error(err);
