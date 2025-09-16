@@ -1,72 +1,110 @@
-<script>
-  let tapTimes = [];
-  let resetTimer;
-
-  function tapBeat() {
-    const now = Date.now();
-
-    // Reset inactivity timer
-    clearTimeout(resetTimer);
-    resetTimer = setTimeout(resetBPM, 2000);
-
-    tapTimes.push(now);
-
-    // Only keep the last few taps to smooth out BPM
-    if (tapTimes.length > 5) {
-      tapTimes.shift();
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Pace Tracker</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      margin-top: 50px;
     }
+    #bpmDisplay {
+      font-size: 2em;
+      margin: 20px 0;
+    }
+    button {
+      font-size: 1.2em;
+      padding: 10px 20px;
+      margin: 10px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <h1>Pace Tracker</h1>
+  <div id="bpmDisplay">Tap to Start</div>
+  <button onclick="tapBeat()">Tap Beat</button>
+  <button onclick="submitBPM()">Submit BPM</button>
 
-    if (tapTimes.length > 1) {
-      let intervals = [];
-      for (let i = 1; i < tapTimes.length; i++) {
-        intervals.push(tapTimes[i] - tapTimes[i - 1]);
+  <script>
+    let tapTimes = [];
+    let resetTimer;
+
+    function tapBeat() {
+      const now = Date.now();
+
+      // Reset inactivity timer (2 seconds here)
+      clearTimeout(resetTimer);
+      resetTimer = setTimeout(resetBPM, 2000);
+
+      tapTimes.push(now);
+
+      // Only keep the last few taps to smooth out BPM
+      if (tapTimes.length > 5) {
+        tapTimes.shift();
       }
-      let avgInterval = intervals.reduce((a, b) => a + b, 0) / intervals.length;
-      let bpm = Math.round(60000 / avgInterval);
 
-      document.getElementById("bpmDisplay").textContent = bpm + " BPM";
-    }
-  }
+      if (tapTimes.length > 1) {
+        let intervals = [];
+        for (let i = 1; i < tapTimes.length; i++) {
+          intervals.push(tapTimes[i] - tapTimes[i - 1]);
+        }
+        let avgInterval = intervals.reduce((a, b) => a + b, 0) / intervals.length;
+        let bpm = Math.round(60000 / avgInterval);
 
-  function resetBPM() {
-    // Don't clear the display, just reset tap history
-    tapTimes = [];
-  }
-
-  async function submitBPM() {
-    if (tapTimes.length < 2 && document.getElementById("bpmDisplay").textContent === "Tap to Start") {
-      alert("Tap at least twice to calculate BPM before submitting.");
-      return;
+        document.getElementById("bpmDisplay").textContent = bpm + " BPM";
+      }
     }
 
-    let bpmText = document.getElementById("bpmDisplay").textContent;
-    let bpm = parseInt(bpmText);
-
-    let location = "";
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(pos => {
-        location = pos.coords.latitude + "," + pos.coords.longitude;
-        sendData(bpm, location);
-      }, () => {
-        sendData(bpm, "Location unavailable");
-      });
-    } else {
-      sendData(bpm, "Geolocation not supported");
+    function resetBPM() {
+      // Don't clear the display, just reset tap history
+      tapTimes = [];
     }
-  }
 
-  async function sendData(bpm, location) {
-    await fetch("https://script.google.com/macros/s/AKfycbwtsjnlESTef7hzYHr5Hh3ftRSOGs5Ib0KDgDtj7HPBDA7xJgJaMFSYyWtXUSwgp4PZ/exec", {
-      method: "POST",
-      body: JSON.stringify({
-        bpm: bpm,
-        time: new Date().toISOString(),
-        location: location
-      }),
-      headers: { "Content-Type": "application/json" }
-    });
+    async function submitBPM() {
+      if (tapTimes.length < 2 && document.getElementById("bpmDisplay").textContent === "Tap to Start") {
+        alert("Tap at least twice to calculate BPM before submitting.");
+        return;
+      }
 
-    alert("BPM submitted: " + bpm);
-    resetBPM();
-  }
-</script>
+      let bpmText = document.getElementById("bpmDisplay").textContent;
+      let bpm = parseInt(bpmText);
+
+      let location = "";
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(pos => {
+          location = pos.coords.latitude + "," + pos.coords.longitude;
+          sendData(bpm, location);
+        }, () => {
+          sendData(bpm, "Location unavailable");
+        });
+      } else {
+        sendData(bpm, "Geolocation not supported");
+      }
+    }
+
+    async function sendData(bpm, location) {
+      try {
+        const response = await fetch("https://script.google.com/macros/s/AKfycbwtsjnlESTef7hzYHr5Hh3ftRSOGs5Ib0KDgDtj7HPBDA7xJgJaMFSYyWtXUSwgp4PZ/exec", {
+          method: "POST",
+          body: JSON.stringify({
+            bpm: bpm,
+            time: new Date().toISOString(),
+            location: location
+          }),
+          headers: { "Content-Type": "application/json" }
+        });
+
+        if (!response.ok) throw new Error("Network error");
+
+        alert("✅ BPM submitted: " + bpm);
+        resetBPM();
+      } catch (err) {
+        console.error("Error submitting:", err);
+        alert("⚠️ Error submitting!");
+      }
+    }
+  </script>
+</body>
+</html>
