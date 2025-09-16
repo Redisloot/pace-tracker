@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>IUB BPM Tracker</title>
+  <style>
+    body { text-align:center; font-family:sans-serif; margin-top:50px; }
+    button { font-size:2em; padding:20px; margin:20px; }
+  </style>
+</head>
+<body>
+  <h1>IUB BPM Tracker</h1>
+  <input type="text" id="userName" placeholder="Your Name">
+  <br>
+  <button id="tapButton">Tap to Beat</button>
+  <p>BPM: <span id="bpm">0</span></p>
+
+  <script>
+    let taps = [];
+    const button = document.getElementById("tapButton");
+    const bpmDisplay = document.getElementById("bpm");
+
+    button.addEventListener("click", () => {
+      const now = Date.now();
+      taps.push(now);
+      if (taps.length > 2) {
+        let intervals = [];
+        for (let i = 1; i < taps.length; i++) {
+          intervals.push(taps[i] - taps[i-1]);
+        }
+        let avg = intervals.reduce((a,b) => a+b) / intervals.length;
+        let bpm = Math.round(60000 / avg);
+        bpmDisplay.textContent = bpm;
+        sendData(bpm);
+      }
+    });
+
+    function sendData(bpm) {
+      const name = document.getElementById("userName").value;
+      const timestamp = new Date().toISOString();
+
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(pos => {
+          upload(name, bpm, timestamp, pos.coords.latitude, pos.coords.longitude);
+        });
+      } else {
+        upload(name, bpm, timestamp, "N/A", "N/A");
+      }
+    }
+
+    function upload(name, bpm, time, lat, lon) {
+      fetch("PASTE_YOUR_GOOGLE_SCRIPT_URL_HERE", {
+        method: "POST",
+        body: JSON.stringify({name, bpm, time, lat, lon}),
+        headers: {"Content-Type": "application/json"}
+      });
+    }
+  </script>
+</body>
+</html>
