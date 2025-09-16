@@ -56,8 +56,7 @@
   }
 
   async function sendData(bpm, location) {
-    await fetch("https://script.google.com/macros/s/AKfycbwtsjnlESTef7hzYHr5Hh3ftRSOGs5Ib0KDgDtj7HPBDA7xJgJaMFSYyWtXUSwgp4PZ/exec
-", {
+    await fetch("https://script.google.com/macros/s/AKfycbwtsjnlESTef7hzYHr5Hh3ftRSOGs5Ib0KDgDtj7HPBDA7xJgJaMFSYyWtXUSwgp4PZ/exec", {
       method: "POST",
       body: JSON.stringify({
         bpm: bpm,
