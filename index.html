@@ -17,19 +17,52 @@
       margin-top: 20px;
       font-weight: bold;
     }
+
+    /* Base button styles */
     button {
-      font-size: 1.2em;
-      padding: 10px 20px;
-      margin: 10px;
       cursor: pointer;
+      display: block;
+      margin: 10px auto;
+      border: none;
+      border-radius: 6px;
+      background: #007acc;
+      color: #fff;
+      transition: background 0.2s;
+    }
+    button:hover {
+      background: #005fa3;
+    }
+
+    /* Default sizes for desktop/tablet */
+    .tap-btn,
+    .submit-btn {
+      font-size: 1.2em;
+      padding: 12px 24px;
+      min-width: 200px;
+    }
+
+    /* Smartphone tweaks */
+    @media screen and (max-width: 480px) {
+      .tap-btn {
+        font-size: 2em;
+        padding: 24px 0;
+        width: 90%;
+        max-width: 400px;
+      }
+      .submit-btn {
+        font-size: 1.5em;
+        padding: 20px 0;
+        width: 75%;
+        max-width: 350px;
+      }
     }
   </style>
 </head>
 <body>
   <h1>Pace Tracker</h1>
   <div id="bpmDisplay">Tap to Start</div>
-  <button onclick="tapBeat()">Tap Beat</button>
-  <button onclick="submitBPM()">Submit BPM</button>
+  <button class="tap-btn" onclick="tapBeat()">Tap Beat</button>
+  <button class="submit-btn" onclick="submitBPM()">Submit BPM</button>
   <div id="status"></div>
 
   <script>
@@ -44,9 +77,7 @@
       if (tapTimes.length > 5) tapTimes.shift();
 
       if (tapTimes.length > 1) {
-        const intervals = tapTimes
-          .slice(1)
-          .map((t, i) => t - tapTimes[i]);
+        const intervals = tapTimes.slice(1).map((t, i) => t - tapTimes[i]);
         const avg = intervals.reduce((a, b) => a + b, 0) / intervals.length;
         const bpm = Math.round(60000 / avg);
         document.getElementById("bpmDisplay").textContent = bpm + " BPM";
@@ -55,7 +86,7 @@
 
     function resetBPM() {
       tapTimes = [];
-      // Leave display alone so last BPM stays visible
+      // last BPM stays visible
     }
 
     function submitBPM() {
@@ -78,7 +109,7 @@
     }
 
     function sendData(bpm, latitude, longitude) {
-      const url = "https://script.google.com/macros/s/AKfycbxCQhq6NanG4gkw8wlhtnc903IibrEP32V1-3G-rUvXPLYo40d067m0EQyqwFfKtvAU/exec";
+      const url = "https://script.google.com/macros/s/AKfycbwn0pDT1zrCnBSa3hBG5Q5foNoSMVFli344e9s9_K2jX7kvJFHB96EKalRZQ_OmIY3E/exec";
       const payload = JSON.stringify({ bpm, latitude, longitude });
 
       fetch(url, {
@@ -89,7 +120,6 @@
       .then(() => {
         document.getElementById("status").textContent =
           "✅ BPM submitted: " + bpm;
-        // caret stays on last BPM, tap again to recalc
       })
       .catch(err => {
         console.error(err);
