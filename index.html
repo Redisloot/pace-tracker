@@ -13,6 +13,10 @@
       font-size: 2em;
       margin: 20px 0;
     }
+    #status {
+      margin-top: 20px;
+      font-weight: bold;
+    }
     button {
       font-size: 1.2em;
       padding: 10px 20px;
@@ -26,6 +30,7 @@
   <div id="bpmDisplay">Tap to Start</div>
   <button onclick="tapBeat()">Tap Beat</button>
   <button onclick="submitBPM()">Submit BPM</button>
+  <div id="status"></div>
 
   <script>
     let tapTimes = [];
@@ -40,7 +45,6 @@
 
       tapTimes.push(now);
 
-      // Only keep the last few taps to smooth out BPM
       if (tapTimes.length > 5) {
         tapTimes.shift();
       }
@@ -58,20 +62,19 @@
     }
 
     function resetBPM() {
-      // Don't clear the display, just reset tap history
       tapTimes = [];
     }
 
     async function submitBPM() {
-      if (tapTimes.length < 2 && document.getElementById("bpmDisplay").textContent === "Tap to Start") {
-        alert("Tap at least twice to calculate BPM before submitting.");
+      const display = document.getElementById("bpmDisplay").textContent;
+      if (tapTimes.length < 2 && display === "Tap to Start") {
+        document.getElementById("status").textContent = "⚠️ Tap at least twice before submitting.";
         return;
       }
 
-      let bpmText = document.getElementById("bpmDisplay").textContent;
-      let bpm = parseInt(bpmText);
-
+      let bpm = parseInt(display);
       let location = "";
+
       if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(pos => {
           location = pos.coords.latitude + "," + pos.coords.longitude;
@@ -98,11 +101,11 @@
 
         if (!response.ok) throw new Error("Network error");
 
-        alert("✅ BPM submitted: " + bpm);
+        document.getElementById("status").textContent = "✅ BPM submitted: " + bpm;
         resetBPM();
       } catch (err) {
         console.error("Error submitting:", err);
-        alert("⚠️ Error submitting!");
+        document.getElementById("status").textContent = "⚠️ Error submitting!";
       }
     }
   </script>
